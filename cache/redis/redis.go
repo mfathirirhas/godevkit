@@ -2,6 +2,7 @@ package redis
 
 /*
 	Wrappers for Redis functionalities.
+	Return simple responses without error and all the functions I frequently used.
 */
 
 import (
@@ -26,7 +27,6 @@ type Redis struct {
 
 type iRedis interface {
 	_redis.Cmdable
-	Watch(fn func(*_redis.Tx) error, keys ...string) error
 }
 
 type Opts struct {
