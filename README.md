@@ -13,9 +13,9 @@ Features:
     - [ ] HTTP
     - [ ] gRPC
 - [ ] Cache
-    - [ ] Local
-    - [ ] Memcached
-    - [ ] Redis
+    - [x] Local
+    - [x] Memcached
+    - [x] Redis
 - [ ] Storage
     - [ ] PostgreSQL
     - [ ] MySQL 
