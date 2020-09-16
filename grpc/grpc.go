@@ -47,8 +47,9 @@ func (g *GRPC) Run() {
 	if err != nil {
 		g.errChan <- err
 	}
-	g.errChan <- g.server.Serve(lis)
 	select {
+	case g.errChan <- g.server.Serve(lis):
+		log.Printf("grpc: error received from server.")
 	case <-sig:
 		log.Printf("grpc: terminate signal received, gracefully shut the server...")
 		g.server.GracefulStop()
