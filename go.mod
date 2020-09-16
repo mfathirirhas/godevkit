@@ -13,11 +13,18 @@ require (
 	github.com/facebookgo/stats v0.0.0-20151006221625-1b76add642e4 // indirect
 	github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4 // indirect
 	github.com/go-redis/redis/v7 v7.4.0
+	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/robfig/cron v1.2.0
 	github.com/rs/cors v1.7.0
 	github.com/stretchr/objx v0.3.0 // indirect
 	github.com/stretchr/testify v1.6.1
+	github.com/valyala/fasthttp v1.16.0
+	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
+	golang.org/x/sys v0.0.0-20200915084602-288bc346aa39 // indirect
+	golang.org/x/text v0.3.3 // indirect
+	google.golang.org/grpc v1.27.0
+	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )
