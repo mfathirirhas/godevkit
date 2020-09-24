@@ -9,6 +9,10 @@ import (
 	_conn "google.golang.org/grpc/connectivity"
 )
 
+const (
+	defaultConnectionTimeout = 3
+)
+
 type Stub struct {
 	client *_grpc.ClientConn
 }
@@ -30,10 +34,14 @@ type Options struct {
 
 	// ConnectionTimeOut(seconds) If WaitConnectionReady is true then will be used as time to wait till connected.
 	// if WaitConnectionReady is false then will be used as time to wait in WaitForStateChange while retrying.
+	// Default is 5 seconds
 	ConnectionTimeOut int
 }
 
 func New(o *Options) (*Stub, error) {
+	if o.ConnectionTimeOut <= 0 {
+		o.ConnectionTimeOut = defaultConnectionTimeout // default is 3 seconds
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(int64(o.ConnectionTimeOut))*time.Second)
 	defer cancel()
 
@@ -64,6 +72,10 @@ func New(o *Options) (*Stub, error) {
 	if !o.WaitConnectionReady {
 		go func(con *_grpc.ClientConn) {
 			for retryCount < o.MaxRetry {
+				// wait as long as the timeout for connecting.
+				if retryCount == 0 {
+					time.Sleep(time.Duration(int64(o.ConnectionTimeOut)) * time.Second)
+				}
 				if retry(ctx, con) {
 					return
 				}
@@ -78,7 +90,7 @@ func New(o *Options) (*Stub, error) {
 
 func retry(ctx context.Context, con *_grpc.ClientConn) bool {
 	state := con.GetState()
-	if state != _conn.Ready {
+	if state != _conn.Ready && state != _conn.Idle {
 		log.Println("grpc: connection is not ready yet, waiting for state change")
 		if !con.WaitForStateChange(ctx, state) {
 			log.Println("grpc: reconnecting is failed, retrying...")
@@ -93,7 +105,7 @@ func retry(ctx context.Context, con *_grpc.ClientConn) bool {
 	}
 }
 
-func (s *Stub) GetClient() *_grpc.ClientConn {
+func (s *Stub) ClientConn() *_grpc.ClientConn {
 	return s.client
 }
 
@@ -101,7 +113,7 @@ func (s *Stub) IsClientReady() bool {
 	return s.client.GetState() == _conn.Ready
 }
 
-func (s *Stub) GetServerAddress() string {
+func (s *Stub) ServerAddress() string {
 	return s.client.Target()
 }
 
