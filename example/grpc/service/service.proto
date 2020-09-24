@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+option go_package = "github.com/mfathirirhas/godevkit/example/grpc/service";
+
+package service;
+
+service Service {
+  rpc Get(GetInput) returns (GetOutput) {}
+  rpc Set(SetInput) returns (SetOutput) {}
+}
+
+message GetInput {
+    int64 Number = 1;
+    string Text = 2;
+    repeated int64 ArrayNumber = 3;
+    repeated string ArrayText = 4;
+    repeated Object ArrayObject = 5;
+}
+
+message Object {
+    int64 N = 1;
+    string T = 2;
+}
+
+message GetOutput {
+    bool Success = 1;
+    string Message = 2;
+}
+
+message SetInput {
+    int64 A = 1;
+    string B = 2;
+}
+
+message SetOutput {
+    bool Success = 1;
+    string Message = 2;
+    double Float = 3;
+}
