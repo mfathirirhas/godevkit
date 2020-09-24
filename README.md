@@ -11,7 +11,7 @@ Features:
     - [ ] WebSocket
 - [ ] API Client
     - [ ] HTTP
-    - [ ] gRPC
+    - [x] gRPC
 - [ ] Cache
     - [x] Local
     - [x] Memcached
