@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	_http "github.com/mfathirirhas/godevkit/http"
+	_http "github.com/mfathirirhas/godevkit/http/server"
 )
 
 type Router struct {
