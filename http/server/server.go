@@ -2,7 +2,9 @@ package server
 
 import (
 	"fmt"
+	"log"
 	nethttp "net/http"
+	"time"
 
 	_grace "github.com/facebookgo/grace/gracehttp"
 	_router "github.com/julienschmidt/httprouter"
@@ -12,14 +14,21 @@ import (
 // TODO add tls support
 
 type HTTP struct {
-	handlers *_router.Router
-	errChan  chan error
-	port     uint16
-	cors     *_cors.Cors
+	handlers    *_router.Router
+	errChan     chan error
+	port        uint16
+	idleTimeout time.Duration
+	cors        *_cors.Cors
 }
 
 type Opts struct {
 	Port uint16
+
+	// IdleTimeout keep-alive timeout while waiting for the next request coming. If empty then no timeout.
+	IdleTimeout time.Duration
+
+	// ErrorLog Optional. Logging error happening in connection, handlers, or filesystem.
+	ErrorLog *log.Logger
 
 	// Cors optional, can be nil, if nil then default will be set.
 	Cors *Cors
@@ -53,9 +62,10 @@ func New(opts *Opts) *HTTP {
 		})
 	}
 	return &HTTP{
-		handlers: h,
-		port:     opts.Port,
-		cors:     cors,
+		handlers:    h,
+		port:        opts.Port,
+		idleTimeout: opts.IdleTimeout,
+		cors:        cors,
 	}
 }
 
@@ -63,8 +73,9 @@ func New(opts *Opts) *HTTP {
 func (http *HTTP) Run() {
 	// TODO add SO_REUSEPORT support
 	http.errChan <- _grace.Serve(&nethttp.Server{
-		Addr:    fmt.Sprintf(":%d", http.port),
-		Handler: http.cors.Handler(http.handlers),
+		Addr:        fmt.Sprintf(":%d", http.port),
+		Handler:     http.cors.Handler(http.handlers),
+		IdleTimeout: http.idleTimeout,
 	})
 }
 
