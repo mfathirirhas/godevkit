@@ -86,11 +86,11 @@ func New(opts *Options) *Client {
 }
 
 type Request struct {
-	BaseURL   string
+	URL       string
 	Header    http.Header
 	URLValues url.Values        // for get method
-	Body      map[string]string // for x-www-form-urlencoded and json payload
-	Files     []File            // for multipart/form
+	Body      map[string]string // for x-www-form-urlencoded, json payload, and multipart/form non-binary data
+	Files     []File            // for multipart/form binary data
 }
 
 type File struct {
@@ -109,7 +109,7 @@ type Response struct {
 
 // URLQuery create new url along with query string from URL values.
 func (r *Request) URLQuery() (string, error) {
-	urlWithValues, err := url.Parse(r.BaseURL)
+	urlWithValues, err := url.Parse(r.URL)
 	if err != nil {
 		return "", err
 	}
@@ -137,17 +137,18 @@ func (r *Request) JSON() (io.Reader, error) {
 	return bytes.NewBuffer(buf), nil
 }
 
+// MultipartForm create multipart/form non-binary and binary data
 func (r *Request) MultipartForm() (io.Reader, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	// non-file body
+	// non-binary body
 	for key, val := range r.Body {
 		err := writer.WriteField(key, fmt.Sprintf("%v", val))
 		if err != nil {
 			return nil, err
 		}
 	}
-	// file body
+	// binary body
 	for _, v := range r.Files {
 		part, err := writer.CreateFormFile(v.FieldName, v.Name)
 		if err != nil {
