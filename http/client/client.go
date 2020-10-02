@@ -41,11 +41,6 @@ type Options struct {
 func (r *retry) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	for i := 0; i < r.nums; i++ {
 		resp, err = r.rt.RoundTrip(req)
-		if req.Context().Err() == context.DeadlineExceeded {
-			// if timeout then retry
-			continue
-		}
-		// return if no error and resp is not nil
 		if resp != nil && err == nil {
 			return
 		}
