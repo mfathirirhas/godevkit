@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math"
 	"math/rand"
 	"mime/multipart"
@@ -184,7 +185,7 @@ type Response struct {
 	StatusCode int
 	Status     string
 	Header     http.Header
-	Body       io.ReadCloser
+	Body       io.Reader
 	Error      error
 }
 
@@ -252,9 +253,6 @@ func (r *Request) MultipartForm() (io.Reader, error) {
 
 // Struct convert response body to struct. Please input reference to the struct.
 func (r *Response) Struct(destination interface{}) error {
-	if r.Body != nil {
-		defer r.Body.Close()
-	}
 	if r.Error != nil {
 		return r.Error
 	}
@@ -263,9 +261,6 @@ func (r *Response) Struct(destination interface{}) error {
 
 // String convert response body to string.
 func (r *Response) String() (string, error) {
-	if r.Body != nil {
-		defer r.Body.Close()
-	}
 	if r.Error != nil {
 		return "", r.Error
 	}
@@ -279,9 +274,6 @@ func (r *Response) String() (string, error) {
 
 // Err return response error.
 func (r *Response) Err() error {
-	if r.Body != nil {
-		defer r.Body.Close()
-	}
 	return r.Error
 }
 
@@ -319,11 +311,17 @@ func (c *Client) Get(ctx context.Context, req *Request) *Response {
 	if err != nil {
 		return &Response{Error: err}
 	}
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return &Response{Error: err}
+	}
+	respBody := bytes.NewReader(data)
 	return &Response{
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
 		Header:     resp.Header,
-		Body:       resp.Body,
+		Body:       respBody,
 		Error:      nil,
 	}
 }
@@ -344,11 +342,17 @@ func (c *Client) PostJSON(ctx context.Context, req *Request) *Response {
 	if err != nil {
 		return &Response{Error: err}
 	}
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return &Response{Error: err}
+	}
+	respBody := bytes.NewReader(data)
 	return &Response{
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
 		Header:     resp.Header,
-		Body:       resp.Body,
+		Body:       respBody,
 		Error:      nil,
 	}
 }
@@ -370,11 +374,17 @@ func (c *Client) PostURLEncoded(ctx context.Context, req *Request) *Response {
 	if err != nil {
 		return &Response{Error: err}
 	}
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return &Response{Error: err}
+	}
+	respBody := bytes.NewReader(data)
 	return &Response{
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
 		Header:     resp.Header,
-		Body:       resp.Body,
+		Body:       respBody,
 		Error:      nil,
 	}
 }
@@ -396,11 +406,17 @@ func (c *Client) PostForm(ctx context.Context, req *Request) *Response {
 	if err != nil {
 		return &Response{Error: err}
 	}
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return &Response{Error: err}
+	}
+	respBody := bytes.NewReader(data)
 	return &Response{
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
 		Header:     resp.Header,
-		Body:       resp.Body,
+		Body:       respBody,
 		Error:      nil,
 	}
 }
