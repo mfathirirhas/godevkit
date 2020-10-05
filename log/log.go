@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	_logrus "github.com/sirupsen/logrus"
@@ -78,7 +77,7 @@ func Init(opts *Options) {
 
 // set log to specified file with specified file descriptor.
 func set(logPath string, fd int) {
-	// check if log directory exist, if not create one.
+	// check if log directory exist, if not create one. TODO traverse file path existence.
 	if _, err := os.Stat(filepath.Dir(logPath)); os.IsNotExist(err) {
 		if err = os.Mkdir(filepath.Dir(logPath), 0744); err != nil {
 			log.Panicf("log: error setting log path: %v", err)
@@ -88,7 +87,7 @@ func set(logPath string, fd int) {
 	if err != nil {
 		log.Panicf("log: failed opening log path: %v", err)
 	}
-	if err = syscall.Dup2(int(logFile.Fd()), fd); err != nil {
+	if err = Dup2File(logFile, fd); err != nil {
 		log.Panicf("log: failed dup 2 to path %s with error: %v", logPath, err)
 	}
 }
