@@ -22,8 +22,8 @@ func Init() *Router {
 	})
 
 	s := &Service{}
-	h.GET("/get/:param1/:param2", s.GetData())
-	h.POST("/set/:urlparam", s.SetData())
+	h.GET("/get", s.GetData())
+	h.POST("/post", s.SetData())
 
 	return &Router{
 		handlers: h,
@@ -44,6 +44,10 @@ type Service struct {
 
 func (s *Service) GetData() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// for i := 0; i < 10; i++ {
+		// 	log.Printf("#%d\n", i+1)
+		// 	time.Sleep(2 * time.Second)
+		// }
 		p1 := r.URL.Query().Get("param1")
 		p2 := r.URL.Query().Get("param2")
 		fmt.Fprint(w, fmt.Sprintf("Param1:=%s , Param2:=%s", p1, p2))

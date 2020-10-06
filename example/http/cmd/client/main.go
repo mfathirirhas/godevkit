@@ -1,26 +1,46 @@
 package main
 
 import (
-	"io/ioutil"
-	"log"
+	"context"
+	"fmt"
 	"net/http"
+	"net/url"
+	"time"
+
+	_client "github.com/mfathirirhas/godevkit/http/client"
 )
 
 func main() {
-	req, err := http.NewRequest(http.MethodGet, "http://localhost:8282/get/1/2", nil)
-	if err != nil {
-		panic(err)
-	}
+	c := _client.New(&_client.Options{
+		MaxIdleConns:    15,
+		IdleConnTimeout: 5 * time.Second,
+		MaxRetry:        5,
+	})
 
-	client := http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
+	Get(c)
+}
+
+func Get(c *_client.Client) {
+	getUrl := "http://localhost:8282/get"
+
+	header := make(http.Header)
+	header.Set("request-id", "1")
+	urlvalues := make(url.Values)
+	urlvalues.Set("param1", "1")
+	urlvalues.Set("param2", "2")
+	urlvalues.Set("param3", "3")
+	getRequest := &_client.Request{
+		URL:       getUrl,
+		Header:    header,
+		URLValues: urlvalues,
 	}
-	defer resp.Body.Close()
-	res, err := ioutil.ReadAll(resp.Body)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	resp := c.Get(ctx, getRequest)
+	fmt.Println("Error: ", resp.Err())
+	str, err := resp.String()
 	if err != nil {
-		log.Println("Err: ", err)
+		fmt.Println("wew: ", err)
 	}
-	log.Println(string(res))
+	fmt.Println("String: ", str)
 }
