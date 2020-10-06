@@ -128,3 +128,7 @@ func Error(err error, msg ...interface{}) {
 func Fatal(err error, msg ...interface{}) {
 	logger.WithFields(_logrus.Fields{"err": err}).Fatal(msg...)
 }
+
+func Panic(err error, msg ...interface{}) {
+	logger.WithFields(_logrus.Fields{"err": err}).Panic(msg...)
+}
