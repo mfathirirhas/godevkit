@@ -13,8 +13,6 @@ import (
 	_logrus "github.com/sirupsen/logrus"
 )
 
-const ()
-
 var (
 	logger = &_logrus.Logger{
 		Out:          os.Stderr,
@@ -24,9 +22,9 @@ var (
 		ExitFunc:     os.Exit,
 		ReportCaller: false,
 	}
-	stdoutDupOnce, stderrDupOnce sync.Once
-	isRuntimeCaller              bool
-	timeFormat                   string
+	dupOnce         sync.Once
+	isRuntimeCaller bool
+	timeFormat      string
 )
 
 type Options struct {
@@ -43,19 +41,17 @@ type Options struct {
 }
 
 func Init(opts *Options) {
-	if opts.StdoutPath != "" {
-		stdoutDupOnce.Do(func() {
+	dupOnce.Do(func() {
+		if opts.StdoutPath != "" {
 			set(opts.StdoutPath, int(os.Stdout.Fd()))
-		})
-	}
-	logger.Formatter.(*_logrus.TextFormatter).DisableLevelTruncation = true
-	logger.Formatter.(*_logrus.TextFormatter).DisableColors = false
-	if opts.StderrPath != "" {
-		stderrDupOnce.Do(func() {
+		}
+		if opts.StderrPath != "" {
 			set(opts.StderrPath, int(os.Stderr.Fd()))
-		})
-		logger.Formatter.(*_logrus.TextFormatter).DisableColors = true
-	}
+		}
+	})
+
+	logger.Formatter.(*_logrus.TextFormatter).DisableLevelTruncation = true
+	logger.Formatter.(*_logrus.TextFormatter).DisableColors = false // will be ignored if output is file
 	logger.Level = _logrus.InfoLevel
 	if opts.IsDebug {
 		logger.Level = _logrus.DebugLevel
