@@ -73,9 +73,9 @@ func Init(opts *Options) {
 
 // set log to specified file with specified file descriptor.
 func set(logPath string, fd int) {
-	// check if log directory exist, if not create one. TODO traverse file path existence.
+	// check if log directory exist, if not create one.
 	if _, err := os.Stat(filepath.Dir(logPath)); os.IsNotExist(err) {
-		if err = os.Mkdir(filepath.Dir(logPath), 0744); err != nil {
+		if err = os.MkdirAll(filepath.Dir(logPath), 0744); err != nil {
 			log.Panicf("log: error setting log path: %v", err)
 		}
 	}
