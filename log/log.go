@@ -79,7 +79,7 @@ func set(logPath string, fd int) {
 			log.Panicf("log: error setting log path: %v", err)
 		}
 	}
-	logFile, err := os.OpenFile(logPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	logFile, err := os.OpenFile(logPath, os.O_WRONLY|os.O_CREATE|os.O_SYNC|os.O_APPEND, 0644)
 	if err != nil {
 		log.Panicf("log: failed opening log path: %v", err)
 	}
