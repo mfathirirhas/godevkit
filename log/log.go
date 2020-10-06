@@ -87,6 +87,7 @@ func set(logPath string, fd int) {
 	if err != nil {
 		log.Panicf("log: failed opening log path: %v", err)
 	}
+	defer logFile.Close()
 	if err = Dup2File(logFile, fd); err != nil {
 		log.Panicf("log: failed dup 2 to path %s with error: %v", logPath, err)
 	}
