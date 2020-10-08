@@ -1,12 +1,10 @@
 package server
 
 import (
-	"fmt"
 	"log"
 	nethttp "net/http"
 	"time"
 
-	_grace "github.com/facebookgo/grace/gracehttp"
 	_router "github.com/julienschmidt/httprouter"
 	_cors "github.com/rs/cors"
 )
@@ -72,11 +70,7 @@ func New(opts *Opts) *HTTP {
 // Run the server. Blocking. Execute it inside goroutine.
 func (http *HTTP) Run() {
 	// TODO add SO_REUSEPORT support
-	http.errChan <- _grace.Serve(&nethttp.Server{
-		Addr:        fmt.Sprintf(":%d", http.port),
-		Handler:     http.cors.Handler(http.handlers),
-		IdleTimeout: http.idleTimeout,
-	})
+	http.errChan <- http.serve()
 }
 
 func (http *HTTP) ListenError() <-chan error {
