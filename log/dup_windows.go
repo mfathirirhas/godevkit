@@ -3,6 +3,7 @@
 package log
 
 import (
+	"log"
 	"os"
 	"syscall"
 )
@@ -25,6 +26,8 @@ func Dup2File(file *os.File, fd int) error {
 		os.Stdout = file
 	} else {
 		os.Stderr = file
+		log.SetOutput(os.Stderr)
+		logger.SetOutput(os.Stderr)
 	}
 	return nil
 }

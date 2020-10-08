@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"time"
 
 	_log "github.com/mfathirirhas/godevkit/log"
@@ -8,8 +10,8 @@ import (
 
 func main() {
 	_log.Init(&_log.Options{
-		StdoutPath:          "./example/log/test_log/stdout/out.log",
-		StderrPath:          "./example/log/test_log/stderr/error.log",
+		StdoutPath:          `C:\Users\PC\go\src\github.com\mfathirirhas\godevkit\example\log\test_log\stdout\out.log`,
+		StderrPath:          `C:\Users\PC\go\src\github.com\mfathirirhas\godevkit\example\log\test_log\stderr\error.log`,
 		EnableRuntimeCaller: true,
 		EnableTimestamp:     true,
 		IsDebug:             true,
@@ -19,4 +21,7 @@ func main() {
 	_log.Debug("Debug message")
 	_log.Info("Info message")
 	_log.Warn("Warn message")
+	fmt.Println("print to stdout")
+	fmt.Println("print to stdout2")
+	log.Println("print to stderr")
 }
