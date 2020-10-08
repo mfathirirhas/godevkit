@@ -11,7 +11,7 @@ import (
 
 func main() {
 	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGUSR2)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT)
 	r := _router.Init()
 	go r.Run()
 	select {
