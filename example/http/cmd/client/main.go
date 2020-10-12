@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -18,6 +19,7 @@ func main() {
 	})
 
 	Get(c)
+	PostJSON(c)
 }
 
 func Get(c *_client.Client) {
@@ -30,7 +32,7 @@ func Get(c *_client.Client) {
 	urlvalues.Set("param2", "2")
 	urlvalues.Set("param3", "3")
 	getRequest := &_client.Request{
-		URL:       getUrl,
+		BaseURL:   getUrl,
 		Header:    header,
 		URLValues: urlvalues,
 	}
@@ -43,4 +45,28 @@ func Get(c *_client.Client) {
 		fmt.Println("wew: ", err)
 	}
 	fmt.Println("String: ", str)
+}
+
+func PostJSON(c *_client.Client) {
+	postUrl := "http://localhost:8282/post/json"
+	m := make(map[string]string)
+	m["param1"] = "123"
+	m["param2"] = "456"
+	m["param3"] = "blabla"
+	m["param4"] = "lkwmef"
+	postJson := &_client.Request{
+		BaseURL: postUrl,
+		Body:    m,
+	}
+	ctx := context.Background()
+	resp := c.PostJSON(ctx, postJson)
+	if resp.Err() != nil {
+		log.Println("Error: ", resp.Err())
+		return
+	}
+	str, err := resp.String()
+	if err != nil {
+		log.Println("Errorr: ", err)
+	}
+	fmt.Println(str)
 }

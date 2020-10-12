@@ -159,10 +159,14 @@ func (r *retry) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 		}
 		resp, err = r.rt.RoundTrip(req)
 		if !r.retry(resp, err) {
-			cancel()
+			if cancel != nil {
+				cancel()
+			}
 			return
 		}
-		cancel()
+		if cancel != nil {
+			cancel()
+		}
 		time.Sleep(r.backOff(i, defaultMinBackOff, defaultMaxBackOff))
 	}
 	return
