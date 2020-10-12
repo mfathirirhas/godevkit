@@ -67,6 +67,7 @@ type Options struct {
 	BackOffPolicy func(attempt int, minWait time.Duration, maxWait time.Duration) time.Duration
 
 	// Transport Optional. If you want to specify your own RoundTrip logic. Otherwise will be set to http.DefaultTransport.
+	// If MaxRetry is more than zero, then this Transport will be executed after retry RoundTripper.
 	Transport http.RoundTripper
 }
 
