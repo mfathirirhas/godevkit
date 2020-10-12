@@ -24,14 +24,15 @@ const (
 )
 
 var (
-	ErrRequestNil = errors.New("http client: request cannot be nil")
+	ErrRequestNil    = errors.New("http client: request cannot be nil")
+	ErrRequestURLNil = errors.New("http client: request url cannot be nil")
 
 	random = func(min int64, max int64) int64 {
 		return rand.New(rand.NewSource(int64(time.Now().Nanosecond()))).Int63n(max-min) + min
 	}
 
 	// Decorrelated Exponential Backoff
-	// source: https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/ &&
+	// source: https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
 	decorJitterExponentialBackOff = func(attempt int, min int64, max int64) int64 {
 		temp := math.Min(float64(defaultMaxBackOff), math.Pow(float64(2), float64(attempt))*float64(defaultMinBackOff))
 		tempSleep := (temp / 2) + float64(random(0, int64(temp/2)))
@@ -168,7 +169,7 @@ func (r *retry) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 }
 
 type Request struct {
-	URL       string
+	BaseURL   string
 	Header    http.Header
 	URLValues url.Values        // for get method
 	Body      map[string]string // for x-www-form-urlencoded, json payload, and multipart/form non-binary data
@@ -177,7 +178,7 @@ type Request struct {
 
 type File struct {
 	FieldName string
-	Name      string // along with file extension
+	FileName  string // along with file extension
 	Data      []byte
 }
 
@@ -189,9 +190,23 @@ type Response struct {
 	Error      error
 }
 
+func (r *Request) init() error {
+	if r.BaseURL == "" {
+		return ErrRequestURLNil
+	}
+	if r.Header == nil {
+		header := make(http.Header)
+		r.Header = header
+	}
+	return nil
+}
+
 // URLQuery create new url along with query string from URL values.
 func (r *Request) URLQuery() (string, error) {
-	urlWithValues, err := url.Parse(r.URL)
+	if err := r.init(); err != nil {
+		return "", err
+	}
+	urlWithValues, err := url.Parse(r.BaseURL)
 	if err != nil {
 		return "", err
 	}
@@ -201,6 +216,9 @@ func (r *Request) URLQuery() (string, error) {
 
 // URLEncoded create url encoded from Body.
 func (r *Request) URLEncoded() (io.Reader, error) {
+	if err := r.init(); err != nil {
+		return nil, err
+	}
 	body := url.Values{}
 	for key, val := range r.Body {
 		body.Add(key, val)
@@ -211,6 +229,9 @@ func (r *Request) URLEncoded() (io.Reader, error) {
 
 // JSON create application/json payload from body
 func (r *Request) JSON() (io.Reader, error) {
+	if err := r.init(); err != nil {
+		return nil, err
+	}
 	buf, err := json.Marshal(r.Body)
 	if err != nil {
 		return nil, err
@@ -221,6 +242,9 @@ func (r *Request) JSON() (io.Reader, error) {
 
 // MultipartForm create multipart/form non-binary and binary data
 func (r *Request) MultipartForm() (io.Reader, error) {
+	if err := r.init(); err != nil {
+		return nil, err
+	}
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	// non-binary body
@@ -232,7 +256,7 @@ func (r *Request) MultipartForm() (io.Reader, error) {
 	}
 	// binary body
 	for _, v := range r.Files {
-		part, err := writer.CreateFormFile(v.FieldName, v.Name)
+		part, err := writer.CreateFormFile(v.FieldName, v.FileName)
 		if err != nil {
 			return nil, err
 		}
