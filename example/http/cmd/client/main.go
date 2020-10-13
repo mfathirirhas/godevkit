@@ -19,6 +19,7 @@ func main() {
 	})
 
 	Get(c)
+	PostURLEncoded(c)
 	PostJSON(c)
 }
 
@@ -45,6 +46,42 @@ func Get(c *_client.Client) {
 		fmt.Println("wew: ", err)
 	}
 	fmt.Println("String: ", str)
+}
+
+type RespJSON struct {
+	Param1 string `json:"param1"`
+	Param2 string `json:"param2"`
+}
+
+func PostURLEncoded(c *_client.Client) {
+	postUrl := "http://localhost:8282/post2"
+	header := make(http.Header)
+	m := make(map[string]string)
+	m["param1"] = "123"
+	m["param2"] = "456"
+	ctx := context.Background()
+	req := &_client.Request{
+		BaseURL: postUrl,
+		Header:  header,
+		Body:    m,
+	}
+	r := RespJSON{}
+	resp := c.PostURLEncoded(ctx, req)
+	if resp.Err() != nil {
+		fmt.Println("resp Error: ", resp.Err())
+		return
+	}
+	str, err := resp.String()
+	if err != nil {
+		fmt.Println("string error: ", err)
+		return
+	}
+	fmt.Printf("string: %s\n", str)
+	if err = resp.Scan(&r); err != nil {
+		fmt.Println("scan error: ", err)
+		return
+	}
+	fmt.Println("scan: ", r)
 }
 
 func PostJSON(c *_client.Client) {

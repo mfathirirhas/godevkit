@@ -26,6 +26,7 @@ func Init() *Router {
 	s := &Service{}
 	h.GET("/get", s.GetData())
 	h.POST("/post", s.SetData())
+	h.POST("/post2", s.SetData2())
 	h.POST("/post/json", s.SetJSON())
 	h.POST("/post/multi", s.SetMulti())
 
@@ -61,6 +62,25 @@ func (s *Service) SetData() http.HandlerFunc {
 		p1 := r.FormValue("param1")
 		p2 := r.FormValue("param2")
 		fmt.Fprint(w, fmt.Sprintf("Param1:=%s, Param2:=%s, URL Param:%s", p1, p2, urlParam))
+	}
+}
+
+func (s *Service) SetData2() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		p1 := r.FormValue("param1")
+		p2 := r.FormValue("param2")
+		resp := make(map[string]interface{})
+		resp["param1"] = p1
+		resp["param2"] = p2
+
+		re, err := json.Marshal(resp)
+		if err != nil {
+			log.Println("error: ", err)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(re)
 	}
 }
 

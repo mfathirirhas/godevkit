@@ -191,7 +191,7 @@ type Response struct {
 	StatusCode int
 	Status     string
 	Header     http.Header
-	Body       io.Reader
+	Body       []byte
 	Error      error
 }
 
@@ -280,12 +280,12 @@ func (r *Request) MultipartForm() (io.Reader, error) {
 	return body, nil
 }
 
-// Struct convert response body to struct. Please input reference to the struct.
-func (r *Response) Struct(destination interface{}) error {
+// Scan fetch r.Body into destination in form of structure or type.
+func (r *Response) Scan(destination interface{}) error {
 	if r.Error != nil {
 		return r.Error
 	}
-	return json.NewDecoder(r.Body).Decode(destination)
+	return json.Unmarshal(r.Body, destination)
 }
 
 // String convert response body to string.
@@ -293,12 +293,11 @@ func (r *Response) String() (string, error) {
 	if r.Error != nil {
 		return "", r.Error
 	}
-	buf := new(bytes.Buffer)
-	_, err := buf.ReadFrom(r.Body)
-	if err != nil {
+	var b strings.Builder
+	if _, err := b.Write(r.Body); err != nil {
 		return "", err
 	}
-	return buf.String(), nil
+	return b.String(), nil
 }
 
 // Err return response error.
@@ -341,11 +340,10 @@ func (c *Client) Get(ctx context.Context, req *Request) *Response {
 		return &Response{Error: err}
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return &Response{Error: err}
 	}
-	respBody := bytes.NewReader(data)
 	return &Response{
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
@@ -372,11 +370,10 @@ func (c *Client) PostJSON(ctx context.Context, req *Request) *Response {
 		return &Response{Error: err}
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return &Response{Error: err}
 	}
-	respBody := bytes.NewReader(data)
 	return &Response{
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
@@ -404,11 +401,10 @@ func (c *Client) PostURLEncoded(ctx context.Context, req *Request) *Response {
 		return &Response{Error: err}
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return &Response{Error: err}
 	}
-	respBody := bytes.NewReader(data)
 	return &Response{
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
@@ -436,11 +432,10 @@ func (c *Client) PostForm(ctx context.Context, req *Request) *Response {
 		return &Response{Error: err}
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return &Response{Error: err}
 	}
-	respBody := bytes.NewReader(data)
 	return &Response{
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
