@@ -378,3 +378,59 @@ func (c *Client) PostMultipart(ctx context.Context, req *Request) *Response {
 	}
 	return c.call(ctx, http.MethodPost, req, body)
 }
+
+func (c *Client) PutJSON(ctx context.Context, req *Request) *Response {
+	body, err := req.JSON()
+	if err != nil {
+		return &Response{Error: err}
+	}
+	return c.call(ctx, http.MethodPut, req, body)
+}
+
+func (c *Client) PutForm(ctx context.Context, req *Request) *Response {
+	body, err := req.FormURLEncoded()
+	if err != nil {
+		return &Response{Error: err}
+	}
+	return c.call(ctx, http.MethodPut, req, body)
+}
+
+func (c *Client) PutMultipart(ctx context.Context, req *Request) *Response {
+	body, err := req.MultipartForm()
+	if err != nil {
+		return &Response{Error: err}
+	}
+	return c.call(ctx, http.MethodPut, req, body)
+}
+
+func (c *Client) PatchJSON(ctx context.Context, req *Request) *Response {
+	body, err := req.JSON()
+	if err != nil {
+		return &Response{Error: err}
+	}
+	return c.call(ctx, http.MethodPatch, req, body)
+}
+
+func (c *Client) PatchForm(ctx context.Context, req *Request) *Response {
+	body, err := req.FormURLEncoded()
+	if err != nil {
+		return &Response{Error: err}
+	}
+	return c.call(ctx, http.MethodPatch, req, body)
+}
+
+func (c *Client) PatchMultipart(ctx context.Context, req *Request) *Response {
+	body, err := req.MultipartForm()
+	if err != nil {
+		return &Response{Error: err}
+	}
+	return c.call(ctx, http.MethodPatch, req, body)
+}
+
+func (c *Client) Delete(ctx context.Context, req *Request) *Response {
+	body, err := req.FormURLEncoded()
+	if err != nil {
+		return &Response{Error: err}
+	}
+	return c.call(ctx, http.MethodDelete, req, body)
+}
