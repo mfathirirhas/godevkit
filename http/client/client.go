@@ -219,8 +219,8 @@ func (r *Request) URLQuery() (string, error) {
 	return urlWithValues.String(), nil
 }
 
-// URLEncoded create url encoded from Body.
-func (r *Request) URLEncoded() (io.Reader, error) {
+// FormURLEncoded create url encoded from Body.
+func (r *Request) FormURLEncoded() (io.Reader, error) {
 	if err := r.init(); err != nil {
 		return nil, err
 	}
@@ -309,16 +309,7 @@ func (c *Client) do(ctx context.Context, method string, urlQuery string, header 
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	var (
-		req *http.Request
-		err error
-	)
-	switch method {
-	case http.MethodPost:
-		req, err = http.NewRequestWithContext(ctx, http.MethodPost, urlQuery, body)
-	default: // default get
-		req, err = http.NewRequestWithContext(ctx, http.MethodGet, urlQuery, nil)
-	}
+	req, err := http.NewRequestWithContext(ctx, method, urlQuery, body)
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +318,7 @@ func (c *Client) do(ctx context.Context, method string, urlQuery string, header 
 	return c.Do(req)
 }
 
-func (c *Client) Get(ctx context.Context, req *Request) *Response {
+func (c *Client) call(ctx context.Context, method string, req *Request, body io.Reader) *Response {
 	if req == nil {
 		return &Response{Error: ErrRequestNil}
 	}
@@ -335,7 +326,7 @@ func (c *Client) Get(ctx context.Context, req *Request) *Response {
 	if err != nil {
 		return &Response{Error: err}
 	}
-	resp, err := c.do(ctx, http.MethodGet, urlQuery, req.Header, nil)
+	resp, err := c.do(ctx, method, urlQuery, req.Header, body)
 	if err != nil {
 		return &Response{Error: err}
 	}
@@ -349,98 +340,33 @@ func (c *Client) Get(ctx context.Context, req *Request) *Response {
 		Status:     resp.Status,
 		Header:     resp.Header,
 		Body:       respBody,
-		Error:      nil,
 	}
 }
 
+func (c *Client) Get(ctx context.Context, req *Request) *Response {
+	return c.call(ctx, http.MethodGet, req, nil)
+}
+
 func (c *Client) PostJSON(ctx context.Context, req *Request) *Response {
-	if req == nil {
-		return &Response{Error: ErrRequestNil}
-	}
-	urlQuery, err := req.URLQuery()
-	if err != nil {
-		return &Response{Error: err}
-	}
 	body, err := req.JSON()
 	if err != nil {
 		return &Response{Error: err}
 	}
-	resp, err := c.do(ctx, http.MethodPost, urlQuery, req.Header, body)
-	if err != nil {
-		return &Response{Error: err}
-	}
-	defer resp.Body.Close()
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return &Response{Error: err}
-	}
-	return &Response{
-		StatusCode: resp.StatusCode,
-		Status:     resp.Status,
-		Header:     resp.Header,
-		Body:       respBody,
-		Error:      nil,
-	}
-}
-
-func (c *Client) PostURLEncoded(ctx context.Context, req *Request) *Response {
-	if req == nil {
-		return &Response{Error: ErrRequestNil}
-	}
-	urlQuery, err := req.URLQuery()
-	if err != nil {
-		return &Response{Error: err}
-	}
-	urlEncoded, err := req.URLEncoded()
-	if err != nil {
-		return &Response{Error: err}
-	}
-
-	resp, err := c.do(ctx, http.MethodPost, urlQuery, req.Header, urlEncoded)
-	if err != nil {
-		return &Response{Error: err}
-	}
-	defer resp.Body.Close()
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return &Response{Error: err}
-	}
-	return &Response{
-		StatusCode: resp.StatusCode,
-		Status:     resp.Status,
-		Header:     resp.Header,
-		Body:       respBody,
-		Error:      nil,
-	}
+	return c.call(ctx, http.MethodPost, req, body)
 }
 
 func (c *Client) PostForm(ctx context.Context, req *Request) *Response {
-	if req == nil {
-		return &Response{Error: ErrRequestNil}
-	}
-	urlQuery, err := req.URLQuery()
+	body, err := req.FormURLEncoded()
 	if err != nil {
 		return &Response{Error: err}
 	}
-	multipartFormData, err := req.MultipartForm()
-	if err != nil {
-		return &Response{Error: err}
-	}
+	return c.call(ctx, http.MethodPost, req, body)
+}
 
-	resp, err := c.do(ctx, http.MethodPost, urlQuery, req.Header, multipartFormData)
+func (c *Client) PostMultipart(ctx context.Context, req *Request) *Response {
+	body, err := req.MultipartForm()
 	if err != nil {
 		return &Response{Error: err}
 	}
-	defer resp.Body.Close()
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return &Response{Error: err}
-	}
-	return &Response{
-		StatusCode: resp.StatusCode,
-		Status:     resp.Status,
-		Header:     resp.Header,
-		Body:       respBody,
-		Error:      nil,
-	}
+	return c.call(ctx, http.MethodPost, req, body)
 }

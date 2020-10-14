@@ -66,7 +66,7 @@ func PostURLEncoded(c *_client.Client) {
 		Body:    m,
 	}
 	r := RespJSON{}
-	resp := c.PostURLEncoded(ctx, req)
+	resp := c.PostForm(ctx, req)
 	if resp.Err() != nil {
 		fmt.Println("resp Error: ", resp.Err())
 		return
