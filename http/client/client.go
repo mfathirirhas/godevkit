@@ -347,6 +347,14 @@ func (c *Client) Get(ctx context.Context, req *Request) *Response {
 	return c.call(ctx, http.MethodGet, req, nil)
 }
 
+func (c *Client) Head(ctx context.Context, req *Request) *Response {
+	return c.call(ctx, http.MethodHead, req, nil)
+}
+
+func (c *Client) Options(ctx context.Context, req *Request) *Response {
+	return c.call(ctx, http.MethodOptions, req, nil)
+}
+
 func (c *Client) PostJSON(ctx context.Context, req *Request) *Response {
 	body, err := req.JSON()
 	if err != nil {
