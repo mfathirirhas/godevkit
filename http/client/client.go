@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -38,6 +39,9 @@ var (
 		tempSleep := (temp / 2) + float64(random(0, int64(temp/2)))
 		return int64(math.Min(float64(max), float64(random(min, int64(tempSleep*3)))))
 	}
+
+	once   sync.Once
+	client *Client
 )
 
 type Client struct {
@@ -51,7 +55,7 @@ type retry struct {
 	backOff func(attempt int, minWait time.Duration, maxWait time.Duration) time.Duration
 }
 
-type Options struct {
+type Opts struct {
 	MaxIdleConns    int
 	IdleConnTimeout time.Duration
 
@@ -71,7 +75,7 @@ type Options struct {
 	Transport http.RoundTripper
 }
 
-func New(opts *Options) *Client {
+func New(opts *Opts) *Client {
 	c := &Client{&http.Client{}}
 	if opts.Transport != nil {
 		c.Client.Transport = opts.Transport
@@ -433,4 +437,139 @@ func (c *Client) Delete(ctx context.Context, req *Request) *Response {
 		return &Response{Error: err}
 	}
 	return c.call(ctx, http.MethodDelete, req, body)
+}
+
+// ---------------------------------------------------
+// Instant functions without initiating client object.
+// These functions have no retry option.
+// ---------------------------------------------------
+
+func Get(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.Get(ctx, req)
+}
+
+func Head(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.Head(ctx, req)
+}
+
+func Options(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.Options(ctx, req)
+}
+
+func PostJSON(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.PostJSON(ctx, req)
+}
+
+func PostForm(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.PostForm(ctx, req)
+}
+
+func PostMultipart(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.PostMultipart(ctx, req)
+}
+
+func PutJSON(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.PutJSON(ctx, req)
+}
+
+func PutForm(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.PutForm(ctx, req)
+}
+
+func PutMultipart(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.PutMultipart(ctx, req)
+}
+
+func PatchJSON(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.PatchJSON(ctx, req)
+}
+
+func PatchForm(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.PatchForm(ctx, req)
+}
+
+func PatchMultipart(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.PatchMultipart(ctx, req)
+}
+
+func Delete(ctx context.Context, req *Request) *Response {
+	once.Do(func() {
+		client = New(&Opts{
+			MaxIdleConns:    100,
+			IdleConnTimeout: 30,
+		})
+	})
+	return client.Delete(ctx, req)
 }

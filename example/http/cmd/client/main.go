@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	c := _client.New(&_client.Options{
+	c := _client.New(&_client.Opts{
 		MaxIdleConns:    15,
 		IdleConnTimeout: 5 * time.Second,
 		MaxRetry:        5,
