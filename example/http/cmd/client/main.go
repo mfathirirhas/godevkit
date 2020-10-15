@@ -16,6 +16,7 @@ func main() {
 		MaxIdleConns:    15,
 		IdleConnTimeout: 5 * time.Second,
 		MaxRetry:        5,
+		EnableLogger:    true,
 	})
 
 	Get(c)

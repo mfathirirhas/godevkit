@@ -8,12 +8,14 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
 	"math/rand"
 	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -55,9 +57,16 @@ type retry struct {
 	backOff func(attempt int, minWait time.Duration, maxWait time.Duration) time.Duration
 }
 
+type logger struct {
+	rt http.RoundTripper
+}
+
 type Opts struct {
 	MaxIdleConns    int
 	IdleConnTimeout time.Duration
+
+	// Logger enable log for successfull or failed request.
+	EnableLogger bool
 
 	// MaxRetry maximum retries for timeout. If zero then no retry.
 	MaxRetry int
@@ -79,10 +88,23 @@ func New(opts *Opts) *Client {
 	c := &Client{&http.Client{}}
 	if opts.Transport != nil {
 		c.Client.Transport = opts.Transport
+		if opts.EnableLogger {
+			l := &logger{
+				rt: opts.Transport,
+			}
+			c.Client.Transport = l
+		}
 		if opts.MaxRetry > 0 {
+			transport := opts.Transport
+			if opts.EnableLogger {
+				l := &logger{
+					rt: opts.Transport,
+				}
+				transport = l
+			}
 			re := &retry{
 				nums:    opts.MaxRetry,
-				rt:      opts.Transport,
+				rt:      transport,
 				retry:   defaultRetry,
 				backOff: defaultBackOff,
 			}
@@ -102,10 +124,17 @@ func New(opts *Opts) *Client {
 		if opts.IdleConnTimeout > 0 {
 			tr.IdleConnTimeout = opts.IdleConnTimeout
 		}
+		var transport http.RoundTripper = tr
 		if opts.MaxRetry > 0 {
+			if opts.EnableLogger {
+				l := &logger{
+					rt: tr,
+				}
+				transport = l
+			}
 			re := &retry{
 				nums:    opts.MaxRetry,
-				rt:      tr,
+				rt:      transport,
 				retry:   defaultRetry,
 				backOff: defaultBackOff,
 			}
@@ -117,7 +146,13 @@ func New(opts *Opts) *Client {
 			}
 			c.Client.Transport = re
 		} else {
-			c.Client.Transport = tr
+			if opts.EnableLogger {
+				l := &logger{
+					rt: tr,
+				}
+				transport = l
+			}
+			c.Client.Transport = transport
 		}
 	}
 	return c
@@ -174,6 +209,23 @@ func (r *retry) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 		}
 		time.Sleep(r.backOff(i, defaultMinBackOff, defaultMaxBackOff))
 	}
+	return
+}
+
+func (l *logger) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	start := time.Now()
+	resp, err = l.rt.RoundTrip(req)
+	elapsed := time.Since(start)
+	log.SetFlags(0)
+	if err != nil {
+		log.Printf("%s | httpclient | ERR | %s | %v | %v\n", time.Now().UTC().Format(time.RFC3339), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), err, elapsed)
+		return
+	}
+	if resp != nil && resp.StatusCode >= 400 {
+		log.Printf("%s | httpclient | %s | %s | %v\n", time.Now().UTC().Format(time.RFC3339), strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed)
+		return
+	}
+	fmt.Printf("%s | httpclient | %s | %s | %v\n", time.Now().UTC().Format(time.RFC3339), strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed)
 	return
 }
 
