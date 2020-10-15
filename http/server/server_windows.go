@@ -6,7 +6,7 @@ import (
 	"fmt"
 	nethttp "net/http"
 
-	_ "github.com/valyala/fasthttp/reuseport"
+	_reuseport "github.com/valyala/fasthttp/reuseport"
 )
 
 // graceful is not support in Windows. Using built-in package instead. This is for avoiding this package failed to run locally, rarely Windows used in server now.
@@ -18,5 +18,9 @@ func (http *HTTP) serve() error {
 	}
 
 	// TODO add support for tls
-	return srv.ListenAndServe()
+	l, err := _reuseport.Listen("tcp", srv.Addr)
+	if err != nil {
+		return err
+	}
+	return srv.Serve(l)
 }
