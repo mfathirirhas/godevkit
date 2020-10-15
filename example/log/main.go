@@ -10,8 +10,8 @@ import (
 
 func main() {
 	_log.Init(&_log.Options{
-		StdoutPath:          `C:\Users\PC\go\src\github.com\mfathirirhas\godevkit\example\log\test_log\stdout\out.log`,
-		StderrPath:          `C:\Users\PC\go\src\github.com\mfathirirhas\godevkit\example\log\test_log\stderr\error.log`,
+		StdoutPath:          `/Users/mfathirirhas/code/go/src/github.com/mfathirirhas/godevkit/example/log/test_log/stdout/out.log`,
+		StderrPath:          `/Users/mfathirirhas/code/go/src/github.com/mfathirirhas/godevkit/example/log/test_log/stderr/error.log`,
 		EnableRuntimeCaller: true,
 		EnableTimestamp:     true,
 		IsDebug:             true,
