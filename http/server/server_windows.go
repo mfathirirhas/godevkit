@@ -4,17 +4,17 @@ package server
 
 import (
 	"fmt"
-	nethttp "net/http"
+	"net/http"
 
 	_reuseport "github.com/valyala/fasthttp/reuseport"
 )
 
 // graceful is not support in Windows. Using built-in package instead. This is for avoiding this package failed to run locally, rarely Windows used in server now.
-func (http *Server) serve() error {
-	srv := &nethttp.Server{
-		Addr:        fmt.Sprintf(":%d", http.port),
-		Handler:     http.cors.Handler(http.handlers),
-		IdleTimeout: http.idleTimeout,
+func (s *Server) serve() error {
+	srv := &http.Server{
+		Addr:        fmt.Sprintf(":%d", s.port),
+		Handler:     s.cors.Handler(s.handlers),
+		IdleTimeout: s.idleTimeout,
 	}
 
 	// TODO add support for tls
