@@ -84,7 +84,7 @@ type Opts struct {
 	Transport http.RoundTripper
 }
 
-func new(opts *Opts) *Client {
+func newClient(opts *Opts) *Client {
 	c := &Client{&http.Client{}}
 	if opts.Transport != nil {
 		c.Client.Transport = opts.Transport
@@ -159,7 +159,7 @@ func new(opts *Opts) *Client {
 }
 
 func New(opts *Opts) *Client {
-	c := new(opts)
+	c := newClient(opts)
 	once.Do(func() {
 		client = c
 	})
@@ -506,7 +506,7 @@ func (c *Client) Delete(ctx context.Context, req *Request) *Response {
 
 func Get(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -516,7 +516,7 @@ func Get(ctx context.Context, req *Request) *Response {
 
 func Head(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -526,7 +526,7 @@ func Head(ctx context.Context, req *Request) *Response {
 
 func Options(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -536,7 +536,7 @@ func Options(ctx context.Context, req *Request) *Response {
 
 func PostJSON(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -546,7 +546,7 @@ func PostJSON(ctx context.Context, req *Request) *Response {
 
 func PostForm(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -556,7 +556,7 @@ func PostForm(ctx context.Context, req *Request) *Response {
 
 func PostMultipart(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -566,7 +566,7 @@ func PostMultipart(ctx context.Context, req *Request) *Response {
 
 func PutJSON(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -576,7 +576,7 @@ func PutJSON(ctx context.Context, req *Request) *Response {
 
 func PutForm(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -586,7 +586,7 @@ func PutForm(ctx context.Context, req *Request) *Response {
 
 func PutMultipart(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -596,7 +596,7 @@ func PutMultipart(ctx context.Context, req *Request) *Response {
 
 func PatchJSON(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -606,7 +606,7 @@ func PatchJSON(ctx context.Context, req *Request) *Response {
 
 func PatchForm(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -616,7 +616,7 @@ func PatchForm(ctx context.Context, req *Request) *Response {
 
 func PatchMultipart(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
@@ -626,7 +626,7 @@ func PatchMultipart(ctx context.Context, req *Request) *Response {
 
 func Delete(ctx context.Context, req *Request) *Response {
 	once.Do(func() {
-		client = new(&Opts{
+		client = newClient(&Opts{
 			MaxIdleConns:    100,
 			IdleConnTimeout: 30,
 		})
