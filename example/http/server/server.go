@@ -10,7 +10,7 @@ import (
 )
 
 type Router struct {
-	handlers *_http.HTTP
+	handlers *_http.Server
 }
 
 func Init() *Router {

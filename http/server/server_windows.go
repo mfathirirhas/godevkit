@@ -10,7 +10,7 @@ import (
 )
 
 // graceful is not support in Windows. Using built-in package instead. This is for avoiding this package failed to run locally, rarely Windows used in server now.
-func (http *HTTP) serve() error {
+func (http *Server) serve() error {
 	srv := &nethttp.Server{
 		Addr:        fmt.Sprintf(":%d", http.port),
 		Handler:     http.cors.Handler(http.handlers),

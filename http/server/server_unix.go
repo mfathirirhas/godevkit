@@ -9,7 +9,7 @@ import (
 	_grace "github.com/facebookgo/grace/gracehttp"
 )
 
-func (http *HTTP) serve() error {
+func (http *Server) serve() error {
 	return _grace.Serve(&nethttp.Server{
 		Addr:        fmt.Sprintf(":%d", http.port),
 		Handler:     http.cors.Handler(http.handlers),
