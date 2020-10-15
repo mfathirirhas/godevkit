@@ -27,8 +27,8 @@ const (
 )
 
 var (
-	ErrRequestNil    = errors.New("http client: request cannot be nil")
-	ErrRequestURLNil = errors.New("http client: request url cannot be nil")
+	ErrRequestNil    = errors.New("httpclient: request cannot be nil")
+	ErrRequestURLNil = errors.New("httpclient: request url cannot be empty")
 
 	random = func(min int64, max int64) int64 {
 		return rand.New(rand.NewSource(int64(time.Now().Nanosecond()))).Int63n(max-min) + min
