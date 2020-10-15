@@ -155,6 +155,9 @@ func New(opts *Opts) *Client {
 			c.Client.Transport = transport
 		}
 	}
+	once.Do(func() {
+		client = c
+	})
 	return c
 }
 
