@@ -228,14 +228,14 @@ func (l *logger) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	elapsed := time.Since(start)
 	log.SetFlags(0)
 	if err != nil {
-		log.Printf("%s | httpclient | ERR | %s | %v | %v | %s\n", time.Now().UTC().Format(time.RFC3339), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), err, elapsed, req.Header.Get("Request-ID"))
+		log.Printf("%s | httpclient | %s | ERR | %s | %v | %v | %s\n", time.Now().UTC().Format(time.RFC3339), req.Method, fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), err, elapsed, req.Header.Get("Request-ID"))
 		return
 	}
 	if resp != nil && resp.StatusCode >= 400 {
-		log.Printf("%s | httpclient | %s | %s | %v | %s\n", time.Now().UTC().Format(time.RFC3339), strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed, req.Header.Get("Request-ID"))
+		log.Printf("%s | httpclient | %s | %s | %s | %v | %s\n", time.Now().UTC().Format(time.RFC3339), req.Method, strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed, req.Header.Get("Request-ID"))
 		return
 	}
-	fmt.Printf("%s | httpclient | %s | %s | %v | %s\n", time.Now().UTC().Format(time.RFC3339), strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed, req.Header.Get("Request-ID"))
+	fmt.Printf("%s | httpclient | %s | %s | %s | %v | %s\n", time.Now().UTC().Format(time.RFC3339), req.Method, strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed, req.Header.Get("Request-ID"))
 	return
 }
 
