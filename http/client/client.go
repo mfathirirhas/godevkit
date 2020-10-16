@@ -379,6 +379,7 @@ func (c *Client) do(ctx context.Context, method string, urlQuery string, header 
 	}
 	req.Header = header
 	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
 	return c.Do(req)
 }
 
