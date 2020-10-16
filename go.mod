@@ -14,6 +14,7 @@ require (
 	github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4 // indirect
 	github.com/go-redis/redis/v7 v7.4.0
 	github.com/golang/protobuf v1.4.2
+	github.com/google/uuid v1.1.2
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/robfig/cron v1.2.0

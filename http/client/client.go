@@ -19,6 +19,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	_uuid "github.com/google/uuid"
 )
 
 const (
@@ -226,14 +228,14 @@ func (l *logger) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	elapsed := time.Since(start)
 	log.SetFlags(0)
 	if err != nil {
-		log.Printf("%s | httpclient | ERR | %s | %v | %v\n", time.Now().UTC().Format(time.RFC3339), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), err, elapsed)
+		log.Printf("%s | httpclient | ERR | %s | %v | %v | %s\n", time.Now().UTC().Format(time.RFC3339), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), err, elapsed, req.Header.Get("Request-ID"))
 		return
 	}
 	if resp != nil && resp.StatusCode >= 400 {
-		log.Printf("%s | httpclient | %s | %s | %v\n", time.Now().UTC().Format(time.RFC3339), strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed)
+		log.Printf("%s | httpclient | %s | %s | %v | %s\n", time.Now().UTC().Format(time.RFC3339), strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed, req.Header.Get("Request-ID"))
 		return
 	}
-	fmt.Printf("%s | httpclient | %s | %s | %v\n", time.Now().UTC().Format(time.RFC3339), strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed)
+	fmt.Printf("%s | httpclient | %s | %s | %v | %s\n", time.Now().UTC().Format(time.RFC3339), strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed, req.Header.Get("Request-ID"))
 	return
 }
 
@@ -243,6 +245,8 @@ type Request struct {
 	URLValues url.Values        // for get method
 	Body      map[string]string // for x-www-form-urlencoded, json payload, and multipart/form non-binary data
 	Files     []File            // for multipart/form binary data
+
+	RequestID string // unique identifier for each request. E.g. uuid v4. If empty, then will be set automatically using uuid v4.
 }
 
 type File struct {
@@ -260,12 +264,14 @@ type Response struct {
 }
 
 func (r *Request) init() error {
+	if r.RequestID == "" {
+		r.RequestID = _uuid.New().String()
+	}
 	if r.BaseURL == "" {
 		return ErrRequestURLNil
 	}
 	if r.Header == nil {
-		header := make(http.Header)
-		r.Header = header
+		r.Header = make(http.Header)
 	}
 	return nil
 }
@@ -391,6 +397,7 @@ func (c *Client) call(ctx context.Context, method string, req *Request, body io.
 	if err != nil {
 		return &Response{Error: err}
 	}
+	req.Header.Set("Request-ID", req.RequestID)
 	resp, err := c.do(ctx, method, urlQuery, req.Header, body)
 	if err != nil {
 		return &Response{Error: err}
