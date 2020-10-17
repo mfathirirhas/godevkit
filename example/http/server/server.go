@@ -19,8 +19,9 @@ func Init() *Router {
 		AllowedOrigins: []string{"foo.com"},
 	}
 	h := _http.New(&_http.Opts{
-		Port: 8282,
-		Cors: cors,
+		Port:         8282,
+		Cors:         cors,
+		EnableLogger: true,
 	})
 
 	s := &Service{}
@@ -51,7 +52,7 @@ func (s *Service) GetData() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		p1 := r.URL.Query().Get("param1")
 		p2 := r.URL.Query().Get("param2")
-		fmt.Fprint(w, fmt.Sprintf("Param1:=%s , Param2:=%s", p1, p2))
+		_http.ResponseString(w, r, http.StatusOK, fmt.Sprintf("Param1:=%s , Param2:=%s", p1, p2))
 	}
 }
 
@@ -61,7 +62,9 @@ func (s *Service) SetData() http.HandlerFunc {
 		r.ParseForm()
 		p1 := r.FormValue("param1")
 		p2 := r.FormValue("param2")
+		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprint(w, fmt.Sprintf("Param1:=%s, Param2:=%s, URL Param:%s", p1, p2, urlParam))
+		// _http.ResponseString(w, r, http.StatusBadGateway, fmt.Sprintf("Param1:=%s, Param2:=%s, URL Param:%s", p1, p2, urlParam))
 	}
 }
 
@@ -73,14 +76,7 @@ func (s *Service) SetData2() http.HandlerFunc {
 		resp := make(map[string]interface{})
 		resp["param1"] = p1
 		resp["param2"] = p2
-
-		re, err := json.Marshal(resp)
-		if err != nil {
-			log.Println("error: ", err)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Write(re)
+		_http.ResponseJSON(w, r, http.StatusOK, resp)
 	}
 }
 
@@ -98,7 +94,7 @@ func (s *Service) SetJSON() http.HandlerFunc {
 			fmt.Fprint(w, "error: "+err.Error())
 			return
 		}
-		fmt.Fprint(w, fmt.Sprintf("JSON Param1:%s, Param2:%s, Param3:%s, Param4:%s", p.Param1, p.Param2, p.Param3, p.Param4))
+		_http.ResponseString(w, r, http.StatusOK, fmt.Sprintf("JSON Param1:%s, Param2:%s, Param3:%s, Param4:%s", p.Param1, p.Param2, p.Param3, p.Param4))
 	}
 }
 

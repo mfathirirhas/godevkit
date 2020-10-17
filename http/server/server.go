@@ -1,10 +1,14 @@
 package server
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
+	_uuid "github.com/google/uuid"
 	_router "github.com/julienschmidt/httprouter"
 	_cors "github.com/rs/cors"
 )
@@ -12,21 +16,22 @@ import (
 // TODO add tls support
 
 type Server struct {
-	handlers    *_router.Router
-	errChan     chan error
-	port        uint16
-	idleTimeout time.Duration
-	cors        *_cors.Cors
+	handlers     *_router.Router
+	errChan      chan error
+	port         uint16
+	idleTimeout  time.Duration
+	enableLogger bool
+	cors         *_cors.Cors
 }
 
 type Opts struct {
 	Port uint16
 
+	// EnableLogger enable logging for incoming requests
+	EnableLogger bool
+
 	// IdleTimeout keep-alive timeout while waiting for the next request coming. If empty then no timeout.
 	IdleTimeout time.Duration
-
-	// ErrorLog Optional. Logging error happening in connection, handlers, or filesystem.
-	ErrorLog *log.Logger
 
 	// Cors optional, can be nil, if nil then default will be set.
 	Cors *Cors
@@ -34,14 +39,13 @@ type Opts struct {
 
 // Cors corst options
 type Cors struct {
-	AllowedOrigins     []string
-	AllowedMethods     []string
-	AllowedHeaders     []string
-	ExposedHeaders     []string
-	MaxAge             int
-	AllowCredentials   bool
-	OptionsPassthrough bool
-	IsDebug            bool
+	AllowedOrigins   []string
+	AllowedMethods   []string
+	AllowedHeaders   []string
+	ExposedHeaders   []string
+	MaxAge           int
+	AllowCredentials bool
+	IsDebug          bool
 }
 
 func New(opts *Opts) *Server {
@@ -55,15 +59,16 @@ func New(opts *Opts) *Server {
 			ExposedHeaders:     opts.Cors.ExposedHeaders,
 			MaxAge:             opts.Cors.MaxAge,
 			AllowCredentials:   opts.Cors.AllowCredentials,
-			OptionsPassthrough: opts.Cors.OptionsPassthrough,
+			OptionsPassthrough: true,
 			Debug:              opts.Cors.IsDebug,
 		})
 	}
 	return &Server{
-		handlers:    h,
-		port:        opts.Port,
-		idleTimeout: opts.IdleTimeout,
-		cors:        cors,
+		handlers:     h,
+		port:         opts.Port,
+		idleTimeout:  opts.IdleTimeout,
+		enableLogger: opts.EnableLogger,
+		cors:         cors,
 	}
 }
 
@@ -77,8 +82,29 @@ func (s *Server) ListenError() <-chan error {
 	return s.errChan
 }
 
-func f(h http.HandlerFunc) _router.Handle {
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(statusCode int) {
+	rw.statusCode = statusCode
+	rw.ResponseWriter.WriteHeader(statusCode)
+}
+
+func newResponseWriter(w http.ResponseWriter) *responseWriter {
+	// default if not set is 200
+	return &responseWriter{w, http.StatusOK}
+}
+
+func f(next http.HandlerFunc) _router.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps _router.Params) {
+		if r.Header.Get("Request-Id") == "" && r.Header.Get("X-Request-Id") == "" {
+			r.Header.Set("Request-Id", _uuid.New().String())
+		}
+		if r.Header.Get("Request-Id") == "" && r.Header.Get("X-Request-Id") != "" {
+			r.Header.Set("Request-Id", r.Header.Get("X-Request-Id"))
+		}
 		if len(ps) > 0 {
 			urlValues := r.URL.Query()
 			for i := range ps {
@@ -86,34 +112,87 @@ func f(h http.HandlerFunc) _router.Handle {
 			}
 			r.URL.RawQuery = urlValues.Encode()
 		}
-		h(w, r)
+		rw := newResponseWriter(w)
+		next(rw, r)
 	}
 }
 
+func (s *Server) logger(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next(w, r)
+		elapsed := time.Since(start)
+		var statusCode int
+		rw, ok := w.(*responseWriter)
+		if !ok { // impossible...!!!, logger middleware come after f, so it must be set with responseWriter, but let be safe.
+			statusCode = http.StatusOK // default http.ResponseWriter
+		} else {
+			statusCode = rw.statusCode
+		}
+		if s.enableLogger {
+			if statusCode >= 400 {
+				log.Printf("%s | httpserver | %s | %d | %s | %v | %s\n", time.Now().Format(time.RFC3339), r.Method, statusCode, r.URL.Path, elapsed, r.Header.Get("Request-Id"))
+			} else {
+				fmt.Printf("%s | httpserver | %s | %d | %s | %v | %s\n", time.Now().Format(time.RFC3339), r.Method, statusCode, r.URL.Path, elapsed, r.Header.Get("Request-Id"))
+			}
+		}
+	}
+}
+
+func responseHeader(w http.ResponseWriter, r *http.Request, statusCode int) {
+	w.Header().Set("Date", time.Now().Format(time.RFC1123))
+	w.Header().Set("Request-Id", r.Header.Get("Request-Id"))
+	w.Header().Set(fmt.Sprintf("X-Req-Id_%s-Status_code", r.Header.Get("Request-Id")), strconv.Itoa(statusCode))
+	w.WriteHeader(statusCode)
+}
+
+// Response response by writing the body to http.ResponseWriter.
+// Call at the end line of your handler.
+func Response(w http.ResponseWriter, r *http.Request, statusCode int, body []byte) {
+	responseHeader(w, r, statusCode)
+	w.Write(body)
+}
+
+// ResponseJSON response by writing body with json encoder into http.ResponseWriter.
+// Body must be either struct or map[string]interface{}. Otherwise would result in incorrect parsing at client side.
+// If you have []byte as response body, then use Response function instead.
+// Call at the end line of your handler.
+func ResponseJSON(w http.ResponseWriter, r *http.Request, statusCode int, body interface{}) error {
+	responseHeader(w, r, statusCode)
+	return json.NewEncoder(w).Encode(body)
+}
+
+// ResponseString response in form of string whatever passed into body param.
+// Call at the end line of your handler.
+func ResponseString(w http.ResponseWriter, r *http.Request, statusCode int, body interface{}) {
+	responseHeader(w, r, statusCode)
+	fmt.Fprintf(w, "%v", body)
+}
+
 func (s *Server) GET(path string, handler http.HandlerFunc) {
-	s.handlers.GET(path, f(handler))
+	s.handlers.GET(path, f(s.logger(handler)))
 }
 
 func (s *Server) HEAD(path string, handler http.HandlerFunc) {
-	s.handlers.HEAD(path, f(handler))
+	s.handlers.HEAD(path, f(s.logger(handler)))
 }
 
 func (s *Server) POST(path string, handler http.HandlerFunc) {
-	s.handlers.POST(path, f(handler))
+	s.handlers.POST(path, f(s.logger(handler)))
 }
 
 func (s *Server) PUT(path string, handler http.HandlerFunc) {
-	s.handlers.POST(path, f(handler))
+	s.handlers.POST(path, f(s.logger(handler)))
 }
 
 func (s *Server) DELETE(path string, handler http.HandlerFunc) {
-	s.handlers.DELETE(path, f(handler))
+	s.handlers.DELETE(path, f(s.logger(handler)))
 }
 
 func (s *Server) PATCH(path string, handler http.HandlerFunc) {
-	s.handlers.PATCH(path, f(handler))
+	s.handlers.PATCH(path, f(s.logger(handler)))
 }
 
 func (s *Server) OPTIONS(path string, handler http.HandlerFunc) {
-	s.handlers.OPTIONS(path, f(handler))
+	s.handlers.OPTIONS(path, f(s.logger(handler)))
 }

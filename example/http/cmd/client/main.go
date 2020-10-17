@@ -19,12 +19,27 @@ func main() {
 		EnableLogger:    true,
 	})
 
+	fmt.Println("Get------------------------------------")
 	Get(c)
+
+	fmt.Println()
+	fmt.Println("PostForm------------------------------------")
 	PostForm(c)
+
+	fmt.Println()
+	fmt.Println("PostJSON------------------------------------")
 	PostJSON(c)
 
+	fmt.Println()
+	fmt.Println("GetInstant------------------------------------")
 	GetInstant()
+
+	fmt.Println()
+	fmt.Println("PostFormInstant------------------------------------")
 	PostFormInstant()
+
+	fmt.Println()
+	fmt.Println("PostJSONInstant------------------------------------")
 	PostJSONInstant()
 }
 
@@ -45,6 +60,7 @@ func Get(c *_client.Client) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	resp := c.Get(ctx, getRequest)
+	fmt.Println(resp.Header)
 	fmt.Println("Error: ", resp.Err())
 	str, err := resp.String()
 	if err != nil {
@@ -81,7 +97,7 @@ func PostForm(c *_client.Client) {
 		fmt.Println("string error: ", err)
 		return
 	}
-	fmt.Printf("string: %s\n", str)
+	fmt.Printf("string: %s", str)
 	if err = resp.Scan(&r); err != nil {
 		fmt.Println("scan error: ", err)
 		return
@@ -161,7 +177,7 @@ func PostFormInstant() {
 		fmt.Println("string error: ", err)
 		return
 	}
-	fmt.Printf("string: %s\n", str)
+	fmt.Printf("string: %s", str)
 	if err = resp.Scan(&r); err != nil {
 		fmt.Println("scan error: ", err)
 		return
