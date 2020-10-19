@@ -70,7 +70,7 @@ type Opts struct {
 	// Logger enable log for successfull or failed request.
 	EnableLogger bool
 
-	// MaxRetry maximum retries for timeout. If zero then no retry.
+	// MaxRetry maximum retry for transient errors. Ignored for POST or PATCH as it's not safe.
 	MaxRetry int
 
 	// RetryPolicy if MaxRetry is zero then this will be ignored.
@@ -194,30 +194,35 @@ func defaultBackOff(attempt int, min time.Duration, max time.Duration) time.Dura
 }
 
 func (r *retry) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-	var (
-		duration time.Duration
-		ctx      context.Context
-		cancel   func()
-	)
-	if deadline, ok := req.Context().Deadline(); ok {
-		duration = time.Until(deadline)
-	}
-	for i := 0; i < r.nums; i++ {
-		if duration > 0 {
-			ctx, cancel = context.WithTimeout(context.Background(), duration)
-			req = req.WithContext(ctx)
-		}
+	// no retry for non-idempotent methods
+	if req.Method == http.MethodPost || req.Method == http.MethodPatch {
 		resp, err = r.rt.RoundTrip(req)
-		if !r.retry(resp, err) {
+	} else {
+		var (
+			duration time.Duration
+			ctx      context.Context
+			cancel   func()
+		)
+		if deadline, ok := req.Context().Deadline(); ok {
+			duration = time.Until(deadline)
+		}
+		for i := 0; i < r.nums; i++ {
+			if duration > 0 {
+				ctx, cancel = context.WithTimeout(context.Background(), duration)
+				req = req.WithContext(ctx)
+			}
+			resp, err = r.rt.RoundTrip(req)
+			if !r.retry(resp, err) {
+				if cancel != nil {
+					cancel()
+				}
+				return
+			}
 			if cancel != nil {
 				cancel()
 			}
-			return
+			time.Sleep(r.backOff(i, defaultMinBackOff, defaultMaxBackOff))
 		}
-		if cancel != nil {
-			cancel()
-		}
-		time.Sleep(r.backOff(i, defaultMinBackOff, defaultMaxBackOff))
 	}
 	return
 }
