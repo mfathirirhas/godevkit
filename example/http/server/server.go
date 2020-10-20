@@ -50,6 +50,7 @@ type Service struct {
 
 func (s *Service) GetData() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Query: ", r.URL.Query())
 		p1 := r.URL.Query().Get("param1")
 		p2 := r.URL.Query().Get("param2")
 		_http.ResponseString(w, r, http.StatusOK, fmt.Sprintf("Param1:=%s , Param2:=%s", p1, p2))

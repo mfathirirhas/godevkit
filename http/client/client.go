@@ -312,7 +312,13 @@ func (r *Request) URLQuery() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	urlWithValues.RawQuery = r.URLValues.Encode()
+	uv := urlWithValues.Query()
+	for k, v := range r.URLValues {
+		for _, e := range v {
+			uv.Add(k, e)
+		}
+	}
+	urlWithValues.RawQuery = uv.Encode()
 	return urlWithValues.String(), nil
 }
 

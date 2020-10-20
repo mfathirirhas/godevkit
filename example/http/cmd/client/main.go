@@ -44,7 +44,7 @@ func main() {
 }
 
 func Get(c *_client.Client) {
-	getUrl := "http://localhost:8282/get"
+	getUrl := "http://localhost:8282/get?a=a&b=b"
 
 	header := make(http.Header)
 	header.Set("request-id", "1")
