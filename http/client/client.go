@@ -53,10 +53,12 @@ type Client struct {
 }
 
 type retry struct {
-	rt      http.RoundTripper
-	nums    int
-	retry   func(*http.Response, error) bool
-	backOff func(attempt int, minWait time.Duration, maxWait time.Duration) time.Duration
+	rt         http.RoundTripper
+	nums       int
+	retry      func(*http.Response, error) bool
+	backOff    func(attempt int, minWait time.Duration, maxWait time.Duration) time.Duration
+	minBackOff time.Duration
+	maxBackOff time.Duration
 }
 
 type logger struct {
@@ -80,6 +82,10 @@ type Opts struct {
 	// BackOffPolicy if MaxRetry is zero then this will be ignored. If RetryPolicy is nil then this will be ignored.
 	// It can use customized backoff policy, if MaxRetry is set and RetryPolicy is set and BackOffPolicy is nil, then default will be used.
 	BackOffPolicy func(attempt int, minWait time.Duration, maxWait time.Duration) time.Duration
+	// MinBackOff minimum wait for backoff. If nil then default will be set.
+	MinBackOff *time.Duration
+	// MaxBackOff maximum wait for backoff. If nil then default will be set
+	MaxBackOff *time.Duration
 
 	// Transport Optional. If you want to specify your own RoundTrip logic. Otherwise will be set to http.DefaultTransport.
 	// If MaxRetry is more than zero, then this Transport will be executed after retry RoundTripper.
@@ -105,16 +111,24 @@ func newClient(opts *Opts) *Client {
 				transport = l
 			}
 			re := &retry{
-				nums:    opts.MaxRetry,
-				rt:      transport,
-				retry:   defaultRetry,
-				backOff: defaultBackOff,
+				nums:       opts.MaxRetry,
+				rt:         transport,
+				retry:      defaultRetry,
+				backOff:    defaultBackOff,
+				minBackOff: defaultMinBackOff,
+				maxBackOff: defaultMaxBackOff,
 			}
 			if opts.RetryPolicy != nil {
 				re.retry = opts.RetryPolicy
 			}
 			if opts.BackOffPolicy != nil {
 				re.backOff = opts.BackOffPolicy
+			}
+			if opts.MinBackOff != nil {
+				re.minBackOff = *opts.MinBackOff
+			}
+			if opts.MaxBackOff != nil {
+				re.maxBackOff = *opts.MaxBackOff
 			}
 			c.Client.Transport = re
 		}
@@ -135,16 +149,24 @@ func newClient(opts *Opts) *Client {
 				transport = l
 			}
 			re := &retry{
-				nums:    opts.MaxRetry,
-				rt:      transport,
-				retry:   defaultRetry,
-				backOff: defaultBackOff,
+				nums:       opts.MaxRetry,
+				rt:         transport,
+				retry:      defaultRetry,
+				backOff:    defaultBackOff,
+				minBackOff: defaultMinBackOff,
+				maxBackOff: defaultMaxBackOff,
 			}
 			if opts.RetryPolicy != nil {
 				re.retry = opts.RetryPolicy
 			}
 			if opts.BackOffPolicy != nil {
 				re.backOff = opts.BackOffPolicy
+			}
+			if opts.MinBackOff != nil {
+				re.minBackOff = *opts.MinBackOff
+			}
+			if opts.MaxBackOff != nil {
+				re.maxBackOff = *opts.MaxBackOff
 			}
 			c.Client.Transport = re
 		} else {
@@ -221,7 +243,7 @@ func (r *retry) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 			if cancel != nil {
 				cancel()
 			}
-			time.Sleep(r.backOff(i, defaultMinBackOff, defaultMaxBackOff))
+			time.Sleep(r.backOff(i, r.minBackOff, r.maxBackOff))
 		}
 	}
 	return
