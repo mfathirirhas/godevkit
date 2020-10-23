@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -124,8 +125,8 @@ func (s *Server) logger(next http.HandlerFunc) http.HandlerFunc {
 		elapsed := time.Since(start)
 		var statusCode int
 		rw, ok := w.(*responseWriter)
-		if !ok { // impossible...!!!, logger middleware come after f, so it must be set with responseWriter, but let be safe.
-			statusCode = http.StatusOK // default http.ResponseWriter
+		if !ok { // impossible...!!! but let be safe.
+			statusCode = http.StatusOK // default http.ResponseWriter status code
 		} else {
 			statusCode = rw.statusCode
 		}
@@ -136,6 +137,22 @@ func (s *Server) logger(next http.HandlerFunc) http.HandlerFunc {
 				fmt.Printf("%s | httpserver | %s | %d | %s | %v | %s\n", time.Now().Format(time.RFC3339), r.Method, statusCode, r.URL.Path, elapsed, r.Header.Get("Request-Id"))
 			}
 		}
+	}
+}
+
+func recoverPanic(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				ResponseString(w, r, http.StatusInternalServerError, "httpserver got panic")
+				log.Printf("%s | httpserver | %s | %s | %s | %s\n", time.Now().Format(time.RFC3339), "PANIC", r.Method, r.URL.Path, r.Header.Get("Request-Id"))
+				log.Printf("☠️ ☠️ ☠️ ☠️ ☠️ ☠️  PANIC START (%s) ☠️ ☠️ ☠️ ☠️ ☠️ ☠️", r.Header.Get("Request-Id"))
+				debug.PrintStack()
+				log.Printf("☠️ ☠️ ☠️ ☠️ ☠️ ☠️  PANIC END (%s) ☠️ ☠️ ☠️ ☠️ ☠️ ☠️", r.Header.Get("Request-Id"))
+				return
+			}
+		}()
+		next(w, r)
 	}
 }
 
@@ -170,29 +187,29 @@ func ResponseString(w http.ResponseWriter, r *http.Request, statusCode int, body
 }
 
 func (s *Server) GET(path string, handler http.HandlerFunc) {
-	s.handlers.GET(path, f(s.logger(handler)))
+	s.handlers.GET(path, f(recoverPanic(s.logger(handler))))
 }
 
 func (s *Server) HEAD(path string, handler http.HandlerFunc) {
-	s.handlers.HEAD(path, f(s.logger(handler)))
+	s.handlers.HEAD(path, f(recoverPanic(s.logger(handler))))
 }
 
 func (s *Server) POST(path string, handler http.HandlerFunc) {
-	s.handlers.POST(path, f(s.logger(handler)))
+	s.handlers.POST(path, f(recoverPanic(s.logger(handler))))
 }
 
 func (s *Server) PUT(path string, handler http.HandlerFunc) {
-	s.handlers.POST(path, f(s.logger(handler)))
+	s.handlers.POST(path, f(recoverPanic(s.logger(handler))))
 }
 
 func (s *Server) DELETE(path string, handler http.HandlerFunc) {
-	s.handlers.DELETE(path, f(s.logger(handler)))
+	s.handlers.DELETE(path, f(recoverPanic(s.logger(handler))))
 }
 
 func (s *Server) PATCH(path string, handler http.HandlerFunc) {
-	s.handlers.PATCH(path, f(s.logger(handler)))
+	s.handlers.PATCH(path, f(recoverPanic(s.logger(handler))))
 }
 
 func (s *Server) OPTIONS(path string, handler http.HandlerFunc) {
-	s.handlers.OPTIONS(path, f(s.logger(handler)))
+	s.handlers.OPTIONS(path, f(recoverPanic(s.logger(handler))))
 }

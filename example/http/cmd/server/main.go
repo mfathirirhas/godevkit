@@ -17,7 +17,7 @@ func main() {
 	select {
 	case err := <-r.Err():
 		log.Println("HTTP server got error: ", err)
-		os.Exit(1)
+		os.Exit(2)
 	case <-sig:
 		log.Println("interrupt signal received")
 		os.Exit(0)
