@@ -70,6 +70,7 @@ func New(opts *Opts) *Server {
 		idleTimeout:  opts.IdleTimeout,
 		enableLogger: opts.EnableLogger,
 		cors:         cors,
+		errChan:      make(chan error),
 	}
 }
 
