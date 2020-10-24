@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"runtime/debug"
 	"strconv"
 	"time"
@@ -22,6 +23,7 @@ type Server struct {
 	port         uint16
 	idleTimeout  time.Duration
 	enableLogger bool
+	logger       *log.Logger
 	cors         *_cors.Cors
 }
 
@@ -64,11 +66,13 @@ func New(opts *Opts) *Server {
 			Debug:              opts.Cors.IsDebug,
 		})
 	}
+	logger := log.New(os.Stderr, "", 0)
 	return &Server{
 		handlers:     h,
 		port:         opts.Port,
 		idleTimeout:  opts.IdleTimeout,
 		enableLogger: opts.EnableLogger,
+		logger:       logger,
 		cors:         cors,
 		errChan:      make(chan error),
 	}
@@ -119,7 +123,7 @@ func f(next http.HandlerFunc) _router.Handle {
 	}
 }
 
-func (s *Server) logger(next http.HandlerFunc) http.HandlerFunc {
+func (s *Server) log(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next(w, r)
@@ -133,7 +137,7 @@ func (s *Server) logger(next http.HandlerFunc) http.HandlerFunc {
 		}
 		if s.enableLogger {
 			if statusCode >= 400 {
-				log.Printf("%s | httpserver | %s | %d | %s | %v | %s\n", time.Now().Format(time.RFC3339), r.Method, statusCode, r.URL.Path, elapsed, r.Header.Get("Request-Id"))
+				s.logger.Printf("%s | httpserver | %s | %d | %s | %v | %s\n", time.Now().Format(time.RFC3339), r.Method, statusCode, r.URL.Path, elapsed, r.Header.Get("Request-Id"))
 			} else {
 				fmt.Printf("%s | httpserver | %s | %d | %s | %v | %s\n", time.Now().Format(time.RFC3339), r.Method, statusCode, r.URL.Path, elapsed, r.Header.Get("Request-Id"))
 			}
@@ -141,15 +145,15 @@ func (s *Server) logger(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func recoverPanic(next http.HandlerFunc) http.HandlerFunc {
+func (s *Server) recoverPanic(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
 				ResponseString(w, r, http.StatusInternalServerError, "httpserver got panic")
-				log.Printf("%s | httpserver | %s | %s | %s | %s\n", time.Now().Format(time.RFC3339), "PANIC", r.Method, r.URL.Path, r.Header.Get("Request-Id"))
-				log.Printf("☠️ ☠️ ☠️ ☠️ ☠️ ☠️  PANIC START (%s) ☠️ ☠️ ☠️ ☠️ ☠️ ☠️", r.Header.Get("Request-Id"))
+				s.logger.Printf("%s | httpserver | %s | %s | %s | %s\n", time.Now().Format(time.RFC3339), "PANIC", r.Method, r.URL.Path, r.Header.Get("Request-Id"))
+				s.logger.Printf("☠️ ☠️ ☠️ ☠️ ☠️ ☠️  PANIC START (%s) ☠️ ☠️ ☠️ ☠️ ☠️ ☠️", r.Header.Get("Request-Id"))
 				debug.PrintStack()
-				log.Printf("☠️ ☠️ ☠️ ☠️ ☠️ ☠️  PANIC END (%s) ☠️ ☠️ ☠️ ☠️ ☠️ ☠️", r.Header.Get("Request-Id"))
+				s.logger.Printf("☠️ ☠️ ☠️ ☠️ ☠️ ☠️  PANIC END (%s) ☠️ ☠️ ☠️ ☠️ ☠️ ☠️", r.Header.Get("Request-Id"))
 				return
 			}
 		}()
@@ -188,29 +192,29 @@ func ResponseString(w http.ResponseWriter, r *http.Request, statusCode int, body
 }
 
 func (s *Server) GET(path string, handler http.HandlerFunc) {
-	s.handlers.GET(path, f(recoverPanic(s.logger(handler))))
+	s.handlers.GET(path, f(s.recoverPanic(s.log(handler))))
 }
 
 func (s *Server) HEAD(path string, handler http.HandlerFunc) {
-	s.handlers.HEAD(path, f(recoverPanic(s.logger(handler))))
+	s.handlers.HEAD(path, f(s.recoverPanic(s.log(handler))))
 }
 
 func (s *Server) POST(path string, handler http.HandlerFunc) {
-	s.handlers.POST(path, f(recoverPanic(s.logger(handler))))
+	s.handlers.POST(path, f(s.recoverPanic(s.log(handler))))
 }
 
 func (s *Server) PUT(path string, handler http.HandlerFunc) {
-	s.handlers.POST(path, f(recoverPanic(s.logger(handler))))
+	s.handlers.POST(path, f(s.recoverPanic(s.log(handler))))
 }
 
 func (s *Server) DELETE(path string, handler http.HandlerFunc) {
-	s.handlers.DELETE(path, f(recoverPanic(s.logger(handler))))
+	s.handlers.DELETE(path, f(s.recoverPanic(s.log(handler))))
 }
 
 func (s *Server) PATCH(path string, handler http.HandlerFunc) {
-	s.handlers.PATCH(path, f(recoverPanic(s.logger(handler))))
+	s.handlers.PATCH(path, f(s.recoverPanic(s.log(handler))))
 }
 
 func (s *Server) OPTIONS(path string, handler http.HandlerFunc) {
-	s.handlers.OPTIONS(path, f(recoverPanic(s.logger(handler))))
+	s.handlers.OPTIONS(path, f(s.recoverPanic(s.log(handler))))
 }
