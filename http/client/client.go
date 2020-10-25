@@ -15,6 +15,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -50,6 +51,7 @@ var (
 
 type Client struct {
 	*http.Client
+	logger *log.Logger
 }
 
 type retry struct {
@@ -61,7 +63,7 @@ type retry struct {
 	maxBackOff time.Duration
 }
 
-type logger struct {
+type logRT struct {
 	rt http.RoundTripper
 }
 
@@ -93,11 +95,12 @@ type Opts struct {
 }
 
 func newClient(opts *Opts) *Client {
-	c := &Client{&http.Client{}}
+	logger := log.New(os.Stderr, "", 0)
+	c := &Client{Client: &http.Client{}, logger: logger}
 	if opts.Transport != nil {
 		c.Client.Transport = opts.Transport
 		if opts.EnableLogger {
-			l := &logger{
+			l := &logRT{
 				rt: opts.Transport,
 			}
 			c.Client.Transport = l
@@ -105,7 +108,7 @@ func newClient(opts *Opts) *Client {
 		if opts.MaxRetry > 0 {
 			transport := opts.Transport
 			if opts.EnableLogger {
-				l := &logger{
+				l := &logRT{
 					rt: opts.Transport,
 				}
 				transport = l
@@ -143,7 +146,7 @@ func newClient(opts *Opts) *Client {
 		var transport http.RoundTripper = tr
 		if opts.MaxRetry > 0 {
 			if opts.EnableLogger {
-				l := &logger{
+				l := &logRT{
 					rt: tr,
 				}
 				transport = l
@@ -171,7 +174,7 @@ func newClient(opts *Opts) *Client {
 			c.Client.Transport = re
 		} else {
 			if opts.EnableLogger {
-				l := &logger{
+				l := &logRT{
 					rt: tr,
 				}
 				transport = l
@@ -249,7 +252,7 @@ func (r *retry) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	return
 }
 
-func (l *logger) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+func (l *logRT) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	start := time.Now()
 	resp, err = l.rt.RoundTrip(req)
 	elapsed := time.Since(start)
