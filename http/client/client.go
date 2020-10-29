@@ -51,7 +51,6 @@ var (
 
 type Client struct {
 	*http.Client
-	logger *log.Logger
 }
 
 type retry struct {
@@ -64,7 +63,8 @@ type retry struct {
 }
 
 type logRT struct {
-	rt http.RoundTripper
+	logger *log.Logger
+	rt     http.RoundTripper
 }
 
 type Opts struct {
@@ -96,12 +96,13 @@ type Opts struct {
 
 func newClient(opts *Opts) *Client {
 	logger := log.New(os.Stderr, "", 0)
-	c := &Client{Client: &http.Client{}, logger: logger}
+	c := &Client{&http.Client{}}
 	if opts.Transport != nil {
 		c.Client.Transport = opts.Transport
 		if opts.EnableLogger {
 			l := &logRT{
-				rt: opts.Transport,
+				logger: logger,
+				rt:     opts.Transport,
 			}
 			c.Client.Transport = l
 		}
@@ -109,7 +110,8 @@ func newClient(opts *Opts) *Client {
 			transport := opts.Transport
 			if opts.EnableLogger {
 				l := &logRT{
-					rt: opts.Transport,
+					logger: logger,
+					rt:     opts.Transport,
 				}
 				transport = l
 			}
@@ -147,7 +149,8 @@ func newClient(opts *Opts) *Client {
 		if opts.MaxRetry > 0 {
 			if opts.EnableLogger {
 				l := &logRT{
-					rt: tr,
+					logger: logger,
+					rt:     tr,
 				}
 				transport = l
 			}
@@ -175,7 +178,8 @@ func newClient(opts *Opts) *Client {
 		} else {
 			if opts.EnableLogger {
 				l := &logRT{
-					rt: tr,
+					logger: logger,
+					rt:     tr,
 				}
 				transport = l
 			}
@@ -256,13 +260,12 @@ func (l *logRT) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	start := time.Now()
 	resp, err = l.rt.RoundTrip(req)
 	elapsed := time.Since(start)
-	log.SetFlags(0)
 	if err != nil {
-		log.Printf("%s | httpclient | %s | ERR | %s | %v | %v | %s\n", time.Now().Format(time.RFC3339), req.Method, fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), err, elapsed, req.Header.Get("Request-Id"))
+		l.logger.Printf("%s | httpclient | %s | ERR | %s | %v | %v | %s\n", time.Now().Format(time.RFC3339), req.Method, fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), err, elapsed, req.Header.Get("Request-Id"))
 		return
 	}
 	if resp != nil && resp.StatusCode >= 400 {
-		log.Printf("%s | httpclient | %s | %s | %s | %v | %s\n", time.Now().Format(time.RFC3339), req.Method, strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed, req.Header.Get("Request-Id"))
+		l.logger.Printf("%s | httpclient | %s | %s | %s | %v | %s\n", time.Now().Format(time.RFC3339), req.Method, strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed, req.Header.Get("Request-Id"))
 		return
 	}
 	fmt.Printf("%s | httpclient | %s | %s | %s | %v | %s\n", time.Now().Format(time.RFC3339), req.Method, strconv.Itoa(resp.StatusCode), fmt.Sprintf("%s%s", req.URL.Host, req.URL.Path), elapsed, req.Header.Get("Request-Id"))
